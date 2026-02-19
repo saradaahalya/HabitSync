@@ -2,43 +2,43 @@
 
 A beautiful, desktop-only habit tracking application built with **vanilla HTML, CSS, and JavaScript**. No frameworks, no dependencies—just pure web technologies with a modern glassmorphism design.
 
-## 🎯 Features
+##  Features
 
-✅ **Multi-page Application** (3 separate HTML files)
+ **Multi-page Application** (3 separate HTML files)
 - Landing page with glassmorphism design
 - Dashboard for habit management
 - Stats page with visual progress tracking
 
-✅ **Habit Management**
+ **Habit Management**
 - Add habits with name and frequency (Daily/Weekly)
 - Edit existing habits inline or via modal
 - Delete habits with confirmation
 - Manual reset progress button
 
-✅ **Daily Check-offs**
+ **Daily Check-offs**
 - Checkbox interface for marking habits complete
 - One check per day per habit (prevents duplicates)
 - Automatic streak calculation
 - Last completion date display
 
-✅ **Progress Visualization**
+ **Progress Visualization**
 - Canvas-based weekly progress bar graph
 - 7-day overview showing habits completed per day
 - Summary statistics (total habits, completed today, avg streak, longest streak)
 - Habit streak leaderboard
 
-✅ **Data Persistence**
+ **Data Persistence**
 - LocalStorage for all habit data
 - Automatic save on every interaction
 - Data survives page refresh and browser restart
 
-✅ **Dark Mode Aesthetic**
+ **Dark Mode Aesthetic**
 - Glassmorphism design system
 - Frosted glass cards with backdrop blur
 - Neon accent colors (cyan & lime)
 - Productivity-focused color palette
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 HabitSync/
@@ -51,7 +51,7 @@ HabitSync/
 └── README.md           # This file
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Opening the Application
 
@@ -80,7 +80,7 @@ HabitSync/
 3. Check-off is locked once per day per habit
 4. View your weekly progress on the Stats page
 
-## 💾 LocalStorage Architecture
+##  LocalStorage Architecture
 
 ### Data Structure
 
@@ -112,7 +112,7 @@ const habit = {
 - `LocalStorageManager.calculateStreak(completedDays)` - Compute streak
 - `LocalStorageManager.resetHabitProgress(id)` - Clear progress
 
-## 🎨 UI/UX Details
+##  UI/UX Details
 
 ### Design System
 
@@ -138,7 +138,7 @@ const habit = {
 
 All pages use a dark theme by default. No light mode toggle—optimized for productivity and focus.
 
-## 📊 Canvas Graph Logic
+##  Canvas Graph Logic
 
 ### Weekly Progress Chart
 
@@ -161,7 +161,7 @@ Located in `stats.html`, powered by `stats.js`:
 - `CanvasGraphManager.drawAxes()` - Draws coordinate system
 - `CanvasGraphManager.draw()` - Main orchestration function
 
-## 🧮 Streak Calculation Logic
+##  Streak Calculation Logic
 
 ### How Streaks Work
 
@@ -186,7 +186,7 @@ Located in `stats.html`, powered by `stats.js`:
 // Prevents duplicate check-offs in same day
 ```
 
-## 🔧 Code Organization
+##  Code Organization
 
 ### Separation of Concerns
 
@@ -224,7 +224,7 @@ Located in `stats.html`, powered by `stats.js`:
 - Statistics calculations
 - Streak visualization
 
-## 🔄 React Migration Path
+##  React Migration Path
 
 This code is designed to be easily migrated to React:
 
@@ -236,7 +236,7 @@ This code is designed to be easily migrated to React:
 
 Existing logic remains the same—only the UI layer changes.
 
-## 🖥️ Browser Compatibility
+##  Browser Compatibility
 
 - **Chrome** 90+
 - **Firefox** 88+
@@ -249,7 +249,7 @@ All modern browsers supporting:
 - Canvas API
 - LocalStorage API
 
-## 📝 Notes
+##  Notes
 
 - **Desktop-only**: No mobile responsiveness (as requested)
 - **No External Dependencies**: Pure vanilla tech stack
@@ -257,7 +257,7 @@ All modern browsers supporting:
 - **Privacy**: No data sent to servers
 - **Performance**: Lightweight, fast loading
 
-## 🎓 Educational Value
+##  Educational Value
 
 Perfect for learning:
 - Vanilla JavaScript patterns
@@ -267,7 +267,7 @@ Perfect for learning:
 - Object-oriented JavaScript
 - Event-driven architecture
 
-## 📄 License
+##  License
 
 Open source. Feel free to modify and extend!
 
