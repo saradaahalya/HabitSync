@@ -1,54 +1,37 @@
-/* ============================================
-   HabitSync - Shared Styles
-   Dark Mode Productivity Aesthetic
-   Glassmorphism Design System
-   ============================================ */
 
-/* ============================================
-   CSS Variables & Root
-   ============================================ */
 :root {
-    /* Colors - Dark Mode Palette */
     --bg-primary: #0a0e27;
     --bg-secondary: #131829;
     --bg-tertiary: #1a1f3a;
     
-    /* Glassmorphism */
     --glass-bg: rgba(19, 24, 41, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-backdrop: blur(10px);
-    
-    /* Text Colors */
+
     --text-primary: #ffffff;
     --text-secondary: #b0b5c8;
     --text-muted: #7a7f92;
     
-    /* Accent Colors */
     --accent-primary: #00d4ff;
     --accent-secondary: #00ff88;
     --accent-danger: #ff4444;
     --accent-warning: #ffaa00;
     
-    /* Spacing */
     --spacing-xs: 0.5rem;
     --spacing-sm: 1rem;
     --spacing-md: 1.5rem;
     --spacing-lg: 2rem;
     --spacing-xl: 3rem;
     
-    /* Border Radius */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     
-    /* Transitions */
     --transition-fast: 0.2s ease;
     --transition-normal: 0.3s ease;
 }
 
-/* ============================================
-   Base Styles
-   ============================================ */
+
 * {
     margin: 0;
     padding: 0;
@@ -69,9 +52,7 @@ body {
     overflow-x: hidden;
 }
 
-/* ============================================
-   Glassmorphism Component
-   ============================================ */
+
 .glass-card {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-backdrop);
@@ -88,9 +69,8 @@ body {
     box-shadow: 0 12px 48px rgba(0, 212, 255, 0.1);
 }
 
-/* ============================================
-   Container & Layout
-   ============================================ */
+
+
 .container {
     max-width: 1400px;
     margin: 0 auto;
@@ -100,9 +80,7 @@ body {
     min-height: 100vh;
 }
 
-/* ============================================
-   Landing Page Styles
-   ============================================ */
+
 .landing-page {
     display: flex;
     align-items: center;
@@ -120,90 +98,103 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
 }
 
 header {
     text-align: center;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
 }
 
 .app-title {
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     letter-spacing: -2px;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
 }
 
 .tagline {
-    font-size: 1.3rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
     font-weight: 300;
     letter-spacing: 0.5px;
 }
 
 .landing-card {
-    max-width: 600px;
+    max-width: 500px;
     width: 100%;
 }
 
 .card-content {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
 }
 
 .landing-card h2 {
-    font-size: 1.8rem;
-    font-weight: 600;
+    font-size: 1.7rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: var(--spacing-xs);
 }
 
 .landing-card p {
     color: var(--text-secondary);
-    line-height: 1.8;
+    line-height: 1.6;
+    text-align: center;
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-xs);
 }
 
 .features-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
-    margin: var(--spacing-lg) 0;
+    gap: 0.6rem;
+    margin: 0.5rem 0;
+    align-items: center;
 }
 
 .feature-item {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.6rem 1rem;
     background: rgba(0, 212, 255, 0.05);
     border-radius: var(--radius-md);
     border-left: 3px solid var(--accent-primary);
+    text-align: center;
+    font-size: 0.8rem;
+    width: 200px;
+    height: 60px;
 }
 
 .feature-icon {
-    font-size: 1.5rem;
+    font-size: 1rem;
     color: var(--accent-secondary);
     font-weight: bold;
 }
 
 .cta-button {
     display: inline-block;
-    padding: 1rem 2.5rem;
+    padding: 0.75rem 2rem;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     color: #000;
     text-decoration: none;
     border-radius: var(--radius-md);
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     text-align: center;
     transition: all var(--transition-normal);
     box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
     border: none;
     cursor: pointer;
+    margin-top: var(--spacing-xs);
 }
 
 .cta-button:hover {
@@ -213,14 +204,12 @@ header {
 
 footer {
     text-align: center;
-    margin-top: var(--spacing-xl);
+    margin-top: var(--spacing-md);
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
-/* ============================================
-   Dashboard Styles
-   ============================================ */
+
 .dashboard-page .container {
     gap: var(--spacing-lg);
 }
@@ -271,9 +260,7 @@ footer {
     gap: var(--spacing-lg);
 }
 
-/* ============================================
-   Form Styles
-   ============================================ */
+
 .add-habit-section {
     width: 100%;
 }
@@ -329,9 +316,7 @@ footer {
     box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
 }
 
-/* ============================================
-   Button Styles
-   ============================================ */
+
 .btn {
     padding: 0.75rem 1.5rem;
     border: none;
@@ -380,9 +365,7 @@ footer {
     font-size: 0.85rem;
 }
 
-/* ============================================
-   Form Message
-   ============================================ */
+
 .form-message {
     grid-column: 1 / -1;
     padding: var(--spacing-md);
@@ -408,9 +391,7 @@ footer {
     border: 1px solid var(--accent-danger);
 }
 
-/* ============================================
-   Habits List Styles
-   ============================================ */
+
 .habits-section {
     flex: 1;
 }
@@ -496,9 +477,7 @@ footer {
     font-style: italic;
 }
 
-/* ============================================
-   Modal Styles
-   ============================================ */
+
 .modal {
     display: none;
     position: fixed;
@@ -560,9 +539,6 @@ footer {
     align-self: flex-start;
 }
 
-/* ============================================
-   Stats Page Styles
-   ============================================ */
 .stats-page .container {
     gap: var(--spacing-lg);
 }
@@ -584,9 +560,7 @@ footer {
     margin-bottom: var(--spacing-lg);
 }
 
-/* ============================================
-   Canvas Styles
-   ============================================ */
+
 .canvas-container {
     display: flex;
     justify-content: center;
@@ -601,9 +575,7 @@ canvas {
     height: auto;
 }
 
-/* ============================================
-   Summary Stats Grid
-   ============================================ */
+
 .summary-stats {
     width: 100%;
 }
@@ -647,9 +619,7 @@ canvas {
     font-weight: 500;
 }
 
-/* ============================================
-   Streaks List Styles
-   ============================================ */
+
 .streaks-section {
     width: 100%;
 }
@@ -692,9 +662,7 @@ canvas {
     color: var(--accent-secondary);
 }
 
-/* ============================================
-   Footer Styles
-   ============================================ */
+
 .dashboard-footer,
 .stats-footer {
     text-align: center;
@@ -705,9 +673,7 @@ canvas {
     margin-top: auto;
 }
 
-/* ============================================
-   Responsive - Tablet Adjustments
-   ============================================ */
+
 @media (max-width: 1200px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
