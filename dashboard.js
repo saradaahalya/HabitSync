@@ -48,7 +48,7 @@ const LocalStorageManager = {
     
     /**
      * Add a new habit
-     * @param {Object} habitData - {name, frequency}
+     * @param {Object} habitData - {name, frequency, goal}
      * @returns {Object} Created habit object
      */
     addHabit(habitData) {
@@ -57,6 +57,8 @@ const LocalStorageManager = {
             id: this.generateId(),
             name: habitData.name,
             frequency: habitData.frequency,
+            goal: habitData.goal || 7,
+            completed: 0,
             streak: 0,
             completedDays: {}, // Format: {'2026-02-19': true}
             createdAt: new Date().toISOString()
@@ -200,6 +202,7 @@ const LocalStorageManager = {
      */
     resetHabitProgress(id) {
         this.updateHabit(id, {
+            completed: 0,
             completedDays: {},
             streak: 0
         });
@@ -259,6 +262,7 @@ const DashboardManager = {
         this.habitForm = document.getElementById('habitForm');
         this.habitNameInput = document.getElementById('habitName');
         this.habitFrequencySelect = document.getElementById('habitFrequency');
+        this.habitGoalInput = document.getElementById('habitGoal');
         this.habitsList = document.getElementById('habitsList');
         this.formMessage = document.getElementById('formMessage');
         this.editModal = document.getElementById('editModal');
@@ -266,6 +270,7 @@ const DashboardManager = {
         this.editHabitId = document.getElementById('editHabitId');
         this.editHabitName = document.getElementById('editHabitName');
         this.editHabitFrequency = document.getElementById('editHabitFrequency');
+        this.editHabitGoal = document.getElementById('editHabitGoal');
         this.modalClose = document.querySelector('.modal-close');
     },
     
@@ -299,6 +304,7 @@ const DashboardManager = {
         
         const name = this.habitNameInput.value.trim();
         const frequency = this.habitFrequencySelect.value;
+        const goal = parseInt(this.habitGoalInput.value) || 7;
         
         if (!name) {
             this.showMessage('Please enter a habit name', 'error');
@@ -306,7 +312,7 @@ const DashboardManager = {
         }
         
         // Add habit to storage
-        LocalStorageManager.addHabit({ name, frequency });
+        LocalStorageManager.addHabit({ name, frequency, goal });
         
         // Reset form
         this.habitForm.reset();
@@ -329,8 +335,58 @@ const DashboardManager = {
         
         this.habitsList.innerHTML = habits.map(habit => this.createHabitCard(habit)).join('');
         
+        // Draw progress rings for each habit
+        habits.forEach(habit => {
+            const canvasId = `progress-${habit.id}`;
+            const completed = habit.completed || 0;
+            const goal = habit.goal || 7;
+            this.drawProgressRing(canvasId, completed, goal);
+        });
+        
         // Bind event listeners to habit cards
         this.bindHabitCardEvents();
+    },
+    
+    /**
+     * Draw circular progress ring on canvas
+     * @param {string} canvasId - Canvas element ID
+     * @param {number} completed - Completed count
+     * @param {number} goal - Goal count
+     */
+    drawProgressRing(canvasId, completed, goal) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const radius = 45;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const percentage = Math.min(completed / goal, 1);
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Background circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        
+        // Progress circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * percentage));
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        
+        // Percentage text
+        ctx.font = 'bold 18px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${Math.round(percentage * 100)}%`, centerX, centerY);
     },
     
     /**
@@ -341,27 +397,35 @@ const DashboardManager = {
     createHabitCard(habit) {
         const isCompletedToday = LocalStorageManager.isCompletedToday(habit.id);
         const lastCompletedDate = this.getLastCompletedDate(habit.completedDays);
+        const canvasId = `progress-${habit.id}`;
+        const completed = habit.completed || 0;
+        const goal = habit.goal || 7;
         
         return `
             <div class="habit-card" data-habit-id="${habit.id}">
-                <input 
-                    type="checkbox" 
-                    class="habit-checkbox" 
-                    ${isCompletedToday ? 'checked' : ''}
-                    data-habit-id="${habit.id}"
-                >
-                <div class="habit-info">
-                    <h3>${this.escapeHtml(habit.name)}</h3>
-                    <div class="habit-meta">
-                        <span class="habit-frequency">${habit.frequency}</span>
-                        <span class="habit-streak">🔥 ${habit.streak} day streak</span>
-                        ${lastCompletedDate ? `<span class="habit-last-checked">Last: ${lastCompletedDate}</span>` : ''}
+                <div class="habit-card-header">
+                    <h3 class="habit-name">${this.escapeHtml(habit.name)}</h3>
+                    <div class="habit-actions">
+                        <button class="btn btn-secondary btn-small btn-edit" data-habit-id="${habit.id}">Edit</button>
+                        <button class="btn btn-secondary btn-small btn-reset" data-habit-id="${habit.id}">Reset</button>
+                        <button class="btn btn-danger btn-small btn-delete" data-habit-id="${habit.id}">Delete</button>
                     </div>
                 </div>
-                <div class="habit-actions">
-                    <button class="btn btn-secondary btn-small btn-edit" data-habit-id="${habit.id}">Edit</button>
-                    <button class="btn btn-secondary btn-small btn-reset" data-habit-id="${habit.id}">Reset</button>
-                    <button class="btn btn-danger btn-small btn-delete" data-habit-id="${habit.id}">Delete</button>
+                <div class="habit-card-content">
+                    <div class="progress-container">
+                        <canvas id="${canvasId}" width="120" height="120"></canvas>
+                    </div>
+                    <div class="habit-details">
+                        <p class="habit-frequency-label"><strong>Frequency:</strong> ${habit.frequency}</p>
+                        <p class="habit-count-label"><strong>Completed:</strong> ${completed} / ${goal} days</p>
+                        <div class="habit-meta">
+                            <span class="habit-streak">🔥 ${habit.streak} day streak</span>
+                            ${lastCompletedDate ? `<span class="habit-last-checked">Last: ${lastCompletedDate}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="habit-card-footer">
+                    <button class="btn btn-primary btn-mark-done" data-habit-id="${habit.id}">🔘 Mark as Done</button>
                 </div>
             </div>
         `;
@@ -402,12 +466,11 @@ const DashboardManager = {
      * Bind event listeners to habit cards
      */
     bindHabitCardEvents() {
-        // Checkbox change
-        document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
+        // Mark as done button
+        document.querySelectorAll('.btn-mark-done').forEach(btn => {
+            btn.addEventListener('click', (e) => {
                 const habitId = e.target.dataset.habitId;
-                LocalStorageManager.toggleHabitToday(habitId);
-                this.renderHabits();
+                this.markHabitDone(habitId);
             });
         });
         
@@ -445,6 +508,28 @@ const DashboardManager = {
     },
     
     /**
+     * Mark a habit as done and increment completed count
+     * @param {string} habitId - Habit ID
+     */
+    markHabitDone(habitId) {
+        const habit = LocalStorageManager.getHabitById(habitId);
+        if (!habit) return;
+        
+        const goal = habit.goal || 7;
+        const currentCompleted = habit.completed || 0;
+        
+        // Only increment if not at goal
+        if (currentCompleted < goal) {
+            const newCompleted = currentCompleted + 1;
+            LocalStorageManager.updateHabit(habitId, { completed: newCompleted });
+            this.renderHabits();
+            this.showMessage(`${habit.name} updated! (${newCompleted} / ${goal} days)`, 'success');
+        } else {
+            this.showMessage('Already reached the goal for this habit!', 'error');
+        }
+    },
+    
+    /**
      * Open edit modal for a habit
      * @param {string} habitId - Habit ID to edit
      */
@@ -455,6 +540,7 @@ const DashboardManager = {
         this.editHabitId.value = habit.id;
         this.editHabitName.value = habit.name;
         this.editHabitFrequency.value = habit.frequency;
+        this.editHabitGoal.value = habit.goal || 7;
         
         this.editModal.classList.add('show');
     },
@@ -477,13 +563,14 @@ const DashboardManager = {
         const habitId = this.editHabitId.value;
         const name = this.editHabitName.value.trim();
         const frequency = this.editHabitFrequency.value;
+        const goal = parseInt(this.editHabitGoal.value) || 7;
         
         if (!name) {
             alert('Please enter a habit name');
             return;
         }
         
-        LocalStorageManager.updateHabit(habitId, { name, frequency });
+        LocalStorageManager.updateHabit(habitId, { name, frequency, goal });
         
         this.closeModal();
         this.renderHabits();
