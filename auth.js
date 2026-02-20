@@ -76,13 +76,13 @@ if (loginBtn) {
 
 // Check if user is logged in when page loads
 // Sync Firebase auth state with localStorage
-// But DON'T auto-redirect from index.html (let user see login page)
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
-    // Sync Firebase auth state with localStorage
+    // User is logged in
     localStorage.setItem("habitsync_user", user.uid);
     console.log("User authenticated:", user.uid);
   } else {
+    // User is not logged in
     console.log("User not authenticated");
   }
 });
