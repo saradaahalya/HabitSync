@@ -1,3 +1,21 @@
+const userId = localStorage.getItem("habitsync_user");
+
+// If no userId, redirect to index (user not logged in)
+if (!userId) {
+  window.location.href = "index.html";
+}
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("habitsync_user");
+  // Also sign out from Firebase
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().signOut().then(() => {
+      window.location.href = "index.html";
+    });
+  } else {
+    window.location.href = "index.html";
+  }
+});
 /* ============================================
    HabitSync Dashboard - Main Logic
    Handles habit management, local storage, and UI updates
@@ -8,7 +26,7 @@
 // ============================================
 const LocalStorageManager = {
     // Keys for localStorage
-    HABITS_KEY: 'habitsync_habits',
+    HABITS_KEY: `habitsync_habits_${userId}`,
     
     /**
      * Initialize default structure if empty

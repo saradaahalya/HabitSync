@@ -1,3 +1,9 @@
+const userId = localStorage.getItem("habitsync_user");
+
+// If no userId, redirect to index (user not logged in)
+if (!userId) {
+  window.location.href = "index.html";
+}
 /* ============================================
    HabitSync Stats - Progress Visualization
    Canvas-based weekly progress graph and statistics
@@ -7,7 +13,7 @@
 // LocalStorage Manager (Same as dashboard.js)
 // ============================================
 const LocalStorageManager = {
-    HABITS_KEY: 'habitsync_habits',
+    HABITS_KEY: `habitsync_habits_${userId}`,
     
     init() {
         if (!this.getHabits()) {
