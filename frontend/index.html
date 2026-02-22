@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HabitSync - Build habits. Track progress. Stay consistent.</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-page">
+    <div class="container">
+        <div class="content-wrapper">
+            <header>
+                <h1 class="app-title">HabitSync</h1>
+                <p class="tagline">Build habits. Track progress. Stay consistent.</p>
+            </header>
+
+            <main>
+                <div class="landing-card glass-card">
+                    <div class="card-content">
+                        <h2>Welcome to HabitSync</h2>
+                        <p>Track your daily habits, build streaks, and visualize your progress. Stay consistent and achieve your goals.</p>
+                        
+                        <div class="features-list">
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span>Create and manage habits</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span>Track daily check-offs</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span>Build streaks</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span>Visualize progress</span>
+                            </div>
+                        </div>
+
+                        <div id="authButtonContainer">
+                            <button id="googleLogin" class="cta-button">
+                                 Sign in with Google
+                            </button>
+                            <a id="dashboardLink" href="dashboard.html" class="cta-button" style="display: none;">
+                                Go to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer>
+                <p>&copy; 2026 HabitSync. Your journey to consistency starts now.</p>
+            </footer>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-compat.js"></script>
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>

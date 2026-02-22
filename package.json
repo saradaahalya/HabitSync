@@ -1,0 +1,16 @@
+{
+  "name": "habitsync",
+  "version": "1.0.0",
+  "description": "HabitSync - A habit tracking application with frontend and backend",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "cd backend && nodemon server.js",
+    "install-backend": "cd backend && npm install",
+    "frontend": "echo 'Frontend is in the /frontend folder. Serve with a live server.'",
+    "setup": "cd backend && npm install"
+  },
+  "keywords": ["habits", "tracker", "productivity"],
+  "author": "",
+  "license": "ISC"
+}
