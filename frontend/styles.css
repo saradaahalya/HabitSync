@@ -45,6 +45,8 @@ html, body {
 
 body {
     background: linear-gradient(135deg, #ededed 0%,#131829 30%, #131829 70%, #ffffff 100%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
@@ -92,6 +94,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    padding-top: 8rem;
 }
 
 .content-wrapper {
@@ -125,7 +128,7 @@ header {
 }
 
 .landing-card {
-    max-width: 500px;
+    max-width: 1500px;
     width: 100%;
 }
 
@@ -151,11 +154,14 @@ header {
 }
 
 .features-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    margin: 0.5rem 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
     align-items: center;
+    justify-items: center;
+    width: 100%;
+    max-width: 700px;
 }
 
 .feature-item {
@@ -163,15 +169,20 @@ header {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
-    padding: 0.6rem 1rem;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
     background: rgba(0, 212, 255, 0.05);
     border-radius: var(--radius-md);
     border-left: 3px solid var(--accent-primary);
     text-align: center;
-    font-size: 0.8rem;
-    width: 200px;
-    height: 60px;
+    font-size: 0.9rem;
+    width: 100%;
+    min-height: 70px;
+    transition: transform 0.2s ease;
+}
+
+.feature-item:hover {
+    transform: translateX(4px);
 }
 
 .feature-icon {
@@ -180,21 +191,31 @@ header {
     font-weight: bold;
 }
 
+#authButtonContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
 .cta-button {
     display: inline-block;
-    padding: 0.75rem 2rem;
+    padding: 0.9rem 2.5rem;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     color: #000;
     text-decoration: none;
     border-radius: var(--radius-md);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1rem;
     text-align: center;
     transition: all var(--transition-normal);
     box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
     border: none;
     cursor: pointer;
-    margin-top: var(--spacing-xs);
+    min-width: 200px;
 }
 
 .cta-button:hover {
@@ -202,12 +223,12 @@ header {
     box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
 }
 
-footer {
+/* footer {
     text-align: center;
     margin-top: var(--spacing-md);
     color: var(--text-muted);
     font-size: 0.85rem;
-}
+} */
 
 
 .dashboard-page .container {
