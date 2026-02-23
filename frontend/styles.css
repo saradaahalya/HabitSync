@@ -44,7 +44,7 @@ html, body {
 }
 
 body {
-    background: linear-gradient(135deg, #ededed 0%,#131829 30%, #131829 70%, #ffffff 100%);
+    background: linear-gradient(180deg, rgba(69, 0, 53, 0.80) 0%, rgba(111, 22, 49, 0.70) 50.62%, rgba(92, 19, 19, 0.80) 100%);
     background-attachment: fixed;
     background-repeat: no-repeat;
     color: var(--text-primary);
