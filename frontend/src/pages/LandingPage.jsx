@@ -1,19 +1,51 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signInWithGoogle } from '../lib/firebase'
-import Button from '../components/Button'
-import FeatureCard from '../components/FeatureCard'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleGoogleSignIn = async () => {
     try {
-      const user = await signInWithGoogle()
-      if (user) {
-        navigate('/dashboard')
+      setLoading(true)
+      setError(null)
+
+      if (typeof firebase === 'undefined') {
+        throw new Error('Firebase not initialized')
       }
+
+      console.log('Starting Google sign-in...')
+      const provider = new firebase.auth.GoogleAuthProvider()
+      const result = await firebase.auth().signInWithPopup(provider)
+      const user = result.user
+
+      console.log('Google sign-in successful:', user.uid)
+
+      // Create session on backend
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          email: user.email,
+          displayName: user.displayName
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error('Backend session failed: ' + response.status)
+      }
+
+      console.log('Backend session created')
+      setLoading(false)
+      navigate('/dashboard')
     } catch (error) {
-      console.error('Sign in failed:', error)
+      console.error('Sign in error:', error)
+      setError(error.message || 'Sign in failed')
+      setLoading(false)
     }
   }
 
@@ -39,38 +71,44 @@ export default function LandingPage() {
 
           {/* Features Grid */}
           <div className="grid grid-cols-2 gap-4 mb-10">
-            <FeatureCard 
-              icon="✓" 
-              title="Create & Manage" 
-              description="Build and track habits"
-            />
-            <FeatureCard 
-              icon="📊" 
-              title="Track Progress" 
-              description="Daily check-offs and streaks"
-            />
-            <FeatureCard 
-              icon="🔥" 
-              title="Build Streaks" 
-              description="Stay consistent daily"
-            />
-            <FeatureCard 
-              icon="📈" 
-              title="Visualize" 
-              description="See your progress"
-            />
+            <div className="glass-card p-4 hover:bg-[rgba(19,24,41,0.8)] transition-all">
+              <div className="text-3xl mb-2">✓</div>
+              <h3 className="font-semibold mb-1 text-primary">Create & Manage</h3>
+              <p className="text-sm text-gray-400">Build and track habits</p>
+            </div>
+            <div className="glass-card p-4 hover:bg-[rgba(19,24,41,0.8)] transition-all">
+              <div className="text-3xl mb-2">📊</div>
+              <h3 className="font-semibold mb-1 text-primary">Track Progress</h3>
+              <p className="text-sm text-gray-400">Daily check-offs and streaks</p>
+            </div>
+            <div className="glass-card p-4 hover:bg-[rgba(19,24,41,0.8)] transition-all">
+              <div className="text-3xl mb-2">🔥</div>
+              <h3 className="font-semibold mb-1 text-primary">Build Streaks</h3>
+              <p className="text-sm text-gray-400">Stay consistent daily</p>
+            </div>
+            <div className="glass-card p-4 hover:bg-[rgba(19,24,41,0.8)] transition-all">
+              <div className="text-3xl mb-2">📈</div>
+              <h3 className="font-semibold mb-1 text-primary">Visualize</h3>
+              <p className="text-sm text-gray-400">See your progress</p>
+            </div>
           </div>
 
-          {/* CTA Buttons */}
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-300">
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* CTA Button */}
           <div className="flex flex-col items-center gap-4">
-            <Button 
+            <button
               onClick={handleGoogleSignIn}
-              variant="primary"
-              size="lg"
-              className="w-full md:w-auto"
+              disabled={loading}
+              className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-black font-semibold rounded-lg hover:shadow-lg transition disabled:opacity-50 cursor-pointer w-full md:w-auto"
             >
-              🔐 Sign in with Google
-            </Button>
+              {loading ? 'Signing in...' : '🔐 Sign in with Google'}
+            </button>
             <p className="text-sm text-gray-400">
               New here? Sign in to create your account and start tracking habits.
             </p>
