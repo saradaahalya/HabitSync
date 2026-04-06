@@ -71,12 +71,6 @@ export const checkInHabit = async (habitId, date = null, notes = '') => {
     notes: notes
   })
 }
-}
-
-export const checkInHabit = async (id) => {
-  const userId = getUserId()
-  return apiClient.post(`/habits/${userId}/${id}/checkin`, {})
-}
 
 export const getHabitStats = async (id) => {
   const userId = getUserId()

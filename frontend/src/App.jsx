@@ -42,8 +42,25 @@ function App() {
       }
 
       // Subscribe to auth state changes
-      firebase.auth().onAuthStateChanged((firebaseUser) => {
+      firebase.auth().onAuthStateChanged(async (firebaseUser) => {
         console.log('Auth state changed:', firebaseUser?.uid || 'null')
+        if (firebaseUser) {
+          // Ensure backend session exists on every app load.
+          try {
+            await fetch('http://localhost:5000/api/auth/login', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName
+              })
+            })
+          } catch (err) {
+            console.warn('Backend session sync failed:', err?.message || err)
+          }
+        }
         currentUser = firebaseUser
         setUser(firebaseUser)
         setLoading(false)

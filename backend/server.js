@@ -125,29 +125,53 @@ app.get('/api/auth/verify', (req, res) => {
   }
 });
 
-// Store user session after Firebase auth
-app.post('/api/auth/login', (req, res) => {
-  const { userId, email } = req.body;
+const getSessionUserId = (req) => {
+  const sessionUserId = Number(req.session.userId);
+  return Number.isInteger(sessionUserId) ? sessionUserId : null;
+};
 
-  if (!userId) {
-    console.log('  ✗ Login error: userId is required');
-    return res.status(400).json({ error: 'userId is required' });
+// Store user session after Firebase auth
+app.post('/api/auth/login', async (req, res) => {
+  const { userId: firebaseUid, email, displayName } = req.body;
+
+  if (!firebaseUid || !email) {
+    console.log('  ✗ Login error: firebase userId and email are required');
+    return res.status(400).json({ error: 'firebase userId and email are required' });
   }
 
-  // Store in session
-  req.session.userId = userId;
-  req.session.email = email || '';
-  req.session.loginTime = new Date();
+  try {
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {
+        firebaseUid,
+        name: displayName || undefined
+      },
+      create: {
+        email,
+        firebaseUid,
+        name: displayName || null
+      }
+    });
 
-  console.log(`  → Setting session for user: ${userId}`);
-  console.log(`  → Session ID will be: ${req.sessionID}`);
+    // Store numeric DB user ID in session
+    req.session.userId = user.id;
+    req.session.email = user.email;
+    req.session.loginTime = new Date();
 
-  res.json({
-    success: true,
-    message: 'Session created',
-    userId: parseInt(userId),
-    sessionId: req.sessionID
-  });
+    console.log(`  → Session set for DB user: ${user.id} (firebase: ${firebaseUid})`);
+    console.log(`  → Session ID will be: ${req.sessionID}`);
+
+    res.json({
+      success: true,
+      message: 'Session created',
+      userId: user.id,
+      firebaseUid,
+      sessionId: req.sessionID
+    });
+  } catch (error) {
+    console.error('Login session create error:', error);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
 });
 
 // Logout
@@ -180,17 +204,14 @@ app.post('/api/auth/logout', (req, res) => {
 // Get user habits
 app.get('/api/habits/:userId', async (req, res) => {
   try {
-    const userId = req.params.userId;
-
-    // Verify session
-    if (parseInt(req.session.userId) !== parseInt(userId)){
-      console.log(`Unauthorized GET /api/habits attempt: session=${req.session.userId}, requested=${userId}`);
-      return res.status(403).json({ error: 'Unauthorized' });
+    const sessionUserId = getSessionUserId(req);
+    if (!sessionUserId) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Get habits from database
     const habits = await prisma.habit.findMany({
-      where: { userId: parseInt(userId) },
+      where: { userId: sessionUserId },
       include: {
         logs: {
           orderBy: { date: 'desc' },
@@ -199,7 +220,7 @@ app.get('/api/habits/:userId', async (req, res) => {
       }
     });
 
-    console.log(`Fetching ${habits.length} habits for user ${userId}`);
+    console.log(`Fetching ${habits.length} habits for user ${sessionUserId}`);
 
     res.json({
      
@@ -219,11 +240,11 @@ app.post('/api/habits/:userId', async (req, res) => {
 
 
   try {
-    const userId = req.params.userId;
+    const sessionUserId = getSessionUserId(req);
     const { title, description, category, frequency } = req.body;
 
-    if (parseInt(req.session.userId) !== parseInt(userId)) {
-      console.log(`Unauthorized POST /api/habits attempt: session=${req.session.userId}, requested=${userId}`)
+    if (!sessionUserId) {
+      console.log(`Unauthorized POST /api/habits attempt: session=${req.session.userId}`)
       return res.status(403).json({ error: 'Unauthorized' })
      
 }
@@ -240,11 +261,11 @@ app.post('/api/habits/:userId', async (req, res) => {
         description: description || '',
         category: category || '',
         frequency: frequency || 'daily',
-        userId: parseInt(userId)
+        userId: sessionUserId
       }
     });
 
-    console.log(`Habit created for user ${userId}:`, habit);
+    console.log(`Habit created for user ${sessionUserId}:`, habit);
 
     res.json({
       success: true,
@@ -260,15 +281,22 @@ app.post('/api/habits/:userId', async (req, res) => {
 // Update habit
 app.put('/api/habits/:userId/:habitId', async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const sessionUserId = getSessionUserId(req);
     const habitId = req.params.habitId;
     const { title, description, category, frequency } = req.body;
 
-    // Verify session
-    if (parseInt(req.session.userId) !== parseInt(userId)) {
-       console.log(`Unauthorized attempt: session=${req.session.userId}, requested=${userId}`);
+    if (!sessionUserId) {
+       console.log(`Unauthorized attempt: session=${req.session.userId}`);
        return res.status(403).json({ error: 'Unauthorized' });
     }
+
+    const existingHabit = await prisma.habit.findUnique({
+      where: { id: parseInt(habitId) }
+    });
+    if (!existingHabit || existingHabit.userId !== sessionUserId) {
+      return res.status(404).json({ error: 'Habit not found' });
+    }
+
     // Update habit in database
     const habit = await prisma.habit.update({
       where: {
@@ -282,7 +310,7 @@ app.put('/api/habits/:userId/:habitId', async (req, res) => {
       }
     });
 
-    console.log(`Habit updated for user ${userId}:`, habitId);
+    console.log(`Habit updated for user ${sessionUserId}:`, habitId);
 
     res.json({
       success: true,
@@ -302,12 +330,19 @@ app.put('/api/habits/:userId/:habitId', async (req, res) => {
 // Delete habit
 app.delete('/api/habits/:userId/:habitId', async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const sessionUserId = getSessionUserId(req);
     const habitId = req.params.habitId;
 
-    if (parseInt(req.session.userId) !== parseInt(userId)) {
-      console.log(`Unauthorized attempt: session=${req.session.userId}, requested=${userId}`);
+    if (!sessionUserId) {
+      console.log(`Unauthorized attempt: session=${req.session.userId}`);
        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const existingHabit = await prisma.habit.findUnique({
+      where: { id: parseInt(habitId) }
+    });
+    if (!existingHabit || existingHabit.userId !== sessionUserId) {
+      return res.status(404).json({ error: 'Habit not found' });
     }
 
     // Delete habit from database (cascade will delete logs)
@@ -318,7 +353,7 @@ app.delete('/api/habits/:userId/:habitId', async (req, res) => {
 
     });
 
-    console.log(`Habit deleted for user ${userId}:`, habitId);
+    console.log(`Habit deleted for user ${sessionUserId}:`, habitId);
 
     res.json({
       success: true,
@@ -338,16 +373,21 @@ app.delete('/api/habits/:userId/:habitId', async (req, res) => {
 // Check in habit (create log entry)
 app.post('/api/habits/:userId/:habitId/checkin', async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const sessionUserId = getSessionUserId(req);
     const habitId = req.params.habitId;
     const { date, notes } = req.body;
 
-    // Verify session
-    if (parseInt(req.session.userId) !== parseInt(userId)) {
-       console.log(`Unauthorized attempt: session=${req.session.userId}, requested=${userId}`);
+    if (!sessionUserId) {
+       console.log(`Unauthorized attempt: session=${req.session.userId}`);
        return res.status(403).json({ error: 'Unauthorized' });
     }
 
+    const existingHabit = await prisma.habit.findUnique({
+      where: { id: parseInt(habitId) }
+    });
+    if (!existingHabit || existingHabit.userId !== sessionUserId) {
+      return res.status(404).json({ error: 'Habit not found' });
+    }
 
     const checkinDate = date ? new Date(date) : new Date();
 
@@ -361,7 +401,7 @@ app.post('/api/habits/:userId/:habitId/checkin', async (req, res) => {
       }
     });
 
-    console.log(`Habit check-in for user ${userId}, habit ${habitId}:`, log);
+    console.log(`Habit check-in for user ${sessionUserId}, habit ${habitId}:`, log);
 
     res.json({
       success: true,
@@ -377,16 +417,15 @@ app.post('/api/habits/:userId/:habitId/checkin', async (req, res) => {
 // Get user stats
 app.get('/api/stats/:userId', async (req, res) => {
   try {
-    const userId = req.params.userId;
-
-    if (parseInt(req.session.userId) !== parseInt(userId)) {
-      console.log(`Unauthorized attempt: session=${req.session.userId}, requested=${userId}`);
+    const sessionUserId = getSessionUserId(req);
+    if (!sessionUserId) {
+      console.log(`Unauthorized attempt: session=${req.session.userId}`);
        return res.status(403).json({ error: 'Unauthorized' });
     }
 
     // Get habit statistics from database
     const habits = await prisma.habit.findMany({
-      where: { userId: parseInt(userId) },
+      where: { userId: sessionUserId },
       include: {
         logs: {
           where: {

@@ -5,22 +5,38 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  habits    Habit[]
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String?
+  password    String?
+  firebaseUid String?  @unique
+  createdAt   DateTime @default(now())
+  habits      Habit[]
 }
 
 model Habit {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  category    String?
+  frequency   String
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  logs        HabitLog[]
+}
+
+model HabitLog {
   id        Int      @id @default(autoincrement())
-  title     String
-  frequency String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  habitId   Int
+  date      DateTime @default(now())
+  completed Boolean  @default(true)
+  notes     String?
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
 }

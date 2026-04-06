@@ -15,6 +15,12 @@ export default function Dashboard({ user }) {
   
   // Storage key for this user
   const STORAGE_KEY = `habits_${user?.uid || 'unknown'}`
+  const normalizeHabit = (habit) => ({
+    ...habit,
+    name: habit.name || habit.title || '',
+    description: habit.description || '',
+    frequency: habit.frequency || 'daily'
+  })
 
   // Load habits from localStorage on mount
   useEffect(() => {
@@ -38,13 +44,12 @@ export default function Dashboard({ user }) {
         
         if (response.ok) {
           const data = await response.json()
-          console.log('Got habits from backend:', data.habits)
-          if (data.habits && data.habits.length > 0) {
-            setHabits(data.habits)
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.habits))
-            setLoading(false)
-            return
-          }
+          const normalizedHabits = (data.habits || []).map(normalizeHabit)
+          console.log('Got habits from backend:', normalizedHabits)
+          setHabits(normalizedHabits)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedHabits))
+          setLoading(false)
+          return
         }
       } catch (err) {
         console.log('Backend error (not critical):', err.message)
@@ -77,8 +82,8 @@ export default function Dashboard({ user }) {
       setError(null)
       console.log('Creating habit:', formData)
       
-      // Create new habit object
-      const newHabit = {
+      // Local fallback if backend is unavailable
+      const localFallbackHabit = {
         id: Date.now().toString(),
         name: formData.name.trim(),
         description: formData.description || '',
@@ -89,36 +94,43 @@ export default function Dashboard({ user }) {
       }
 
       // Try to save to backend
-      let backendSuccess = false
       try {
         const response = await fetch(`http://localhost:5000/api/habits/${user.uid}`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({
+            title: formData.name.trim(),
+            description: formData.description,
+            frequency: formData.frequency
+          })
         })
         
         if (response.ok) {
           const data = await response.json()
-          console.log('Backend created habit:', data.habit)
-          backendSuccess = true
+          const createdHabit = normalizeHabit(data.habit || {})
+          const updated = [...habits, createdHabit]
+          setHabits(updated)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+          console.log('Backend created habit:', createdHabit)
         } else {
           console.warn('Backend creation failed:', response.status)
+          const updated = [...habits, localFallbackHabit]
+          setHabits(updated)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
         }
       } catch (err) {
         console.warn('Backend unavailable, using localStorage:', err.message)
+        const updated = [...habits, localFallbackHabit]
+        setHabits(updated)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       }
-
-      // Always save to localStorage as backup
-      const updated = [...habits, newHabit]
-      setHabits(updated)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       
       // Clear form
       setFormData({ name: '', description: '', frequency: 'daily' })
       setShowAddForm(false)
       
-      console.log('Habit created successfully (localStorage):', newHabit)
+      console.log('Habit created successfully')
     } catch (err) {
       console.error('Error creating habit:', err)
       setError(err.message || 'Failed to create habit')

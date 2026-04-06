@@ -33,6 +33,17 @@ export default function Stats({ user }) {
   const [loading, setLoading] = useState(false)
   const [chartType, setChartType] = useState('bar') // 'bar', 'line', 'pie', 'doughnut'
   const STORAGE_KEY = `habits_${user?.uid || 'unknown'}`
+  const normalizeHabit = (habit) => ({
+    ...habit,
+    name: habit.name || habit.title || '',
+    description: habit.description || '',
+    frequency: habit.frequency || 'daily',
+    logs: Array.isArray(habit.logs) ? habit.logs : []
+  })
+  const getHabitValue = (habit) => {
+    // Prefer persisted check-ins from DB logs; fallback to legacy streak value.
+    return habit.logs?.length ?? habit.streak ?? 0
+  }
 
   useEffect(() => {
     console.log('Stats: Component mounted for user:', user?.uid)
@@ -54,13 +65,12 @@ export default function Stats({ user }) {
         
         if (response.ok) {
           const data = await response.json()
-          console.log('Stats: Got habits from backend:', data.habits)
-          if (data.habits && data.habits.length > 0) {
-            setHabits(data.habits)
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.habits))
-            setLoading(false)
-            return
-          }
+          const normalizedHabits = (data.habits || []).map(normalizeHabit)
+          console.log('Stats: Got habits from backend:', normalizedHabits)
+          setHabits(normalizedHabits)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedHabits))
+          setLoading(false)
+          return
         }
       } catch (err) {
         console.log('Stats: Backend error (not critical):', err.message)
@@ -107,7 +117,7 @@ export default function Stats({ user }) {
     }
 
     const totalHabits = habits.length
-    const streaks = habits.map(h => h.streak || 0)
+    const streaks = habits.map(h => getHabitValue(h))
     const averageStreak = streaks.length > 0 ? Math.floor(streaks.reduce((a, b) => a + b) / streaks.length) : 0
     const longestStreak = streaks.length > 0 ? Math.max(...streaks) : 0
     const completionRate = streaks.length > 0 ? Math.floor((streaks.filter(s => s > 0).length / streaks.length) * 100) : 0
@@ -129,7 +139,7 @@ export default function Stats({ user }) {
       datasets: [
         {
           label: 'Streak (days)',
-          data: habits.map(h => h.streak || 0),
+          data: habits.map(h => getHabitValue(h)),
           backgroundColor: 'rgba(0, 255, 204, 0.8)',
           borderColor: 'rgba(0, 255, 204, 1)',
           borderWidth: 2,
@@ -145,7 +155,7 @@ export default function Stats({ user }) {
       labels: habits.length > 0 ? Array.from({ length: 7 }, (_, i) => `Day ${i + 1}`) : ['Day 1'],
       datasets: habits.map((habit, idx) => ({
         label: habit.name,
-        data: Array.from({ length: 7 }, (_, i) => Math.max(0, (habit.streak || 0) - (6 - i))),
+        data: Array.from({ length: 7 }, (_, i) => Math.max(0, getHabitValue(habit) - (6 - i))),
         borderColor: `hsl(${idx * 60}, 100%, 50%)`,
         backgroundColor: `hsla(${idx * 60}, 100%, 50%, 0.1)`,
         borderWidth: 2,
