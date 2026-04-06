@@ -14,6 +14,23 @@ export default function Dashboard({ user }) {
   const [saving, setSaving] = useState(false)
   const [checkInHabitId, setCheckInHabitId] = useState(null)
   const [checkInMinutes, setCheckInMinutes] = useState('30')
+  const [checkInNotes, setCheckInNotes] = useState('')
+  const PREBUILT_HABITS = [
+    {
+      key: 'study',
+      name: 'Study Session',
+      description: 'Focused study for 60 minutes',
+      frequency: 'daily',
+      weeklyGoal: 5
+    },
+    {
+      key: 'exercise',
+      name: 'Exercise',
+      description: 'Workout or walk for at least 30 minutes',
+      frequency: 'daily',
+      weeklyGoal: 4
+    }
+  ]
   
   // Storage key for this user
   const STORAGE_KEY = `habits_${user?.uid || 'unknown'}`
@@ -155,14 +172,66 @@ export default function Dashboard({ user }) {
     }
   }
 
+  const createHabitFromTemplate = async (template) => {
+    try {
+      setCreating(true)
+      setError(null)
+      const localFallbackHabit = {
+        id: Date.now().toString(),
+        name: template.name,
+        description: template.description || '',
+        frequency: template.frequency || 'daily',
+        weeklyGoal: Number(template.weeklyGoal) > 0 ? Number(template.weeklyGoal) : 7,
+        streak: 0,
+        createdAt: new Date().toISOString(),
+        lastCheckIn: null,
+        logs: []
+      }
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/habits/${user.uid}`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: template.name.trim(),
+            description: template.description,
+            frequency: template.frequency,
+            weeklyGoal: Number(template.weeklyGoal) > 0 ? Number(template.weeklyGoal) : 7
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const createdHabit = normalizeHabit(data.habit || {})
+          const updated = [...habits, createdHabit]
+          setHabits(updated)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+          return
+        }
+      } catch (err) {
+        console.warn('Backend unavailable for template create:', err.message)
+      }
+
+      const updated = [...habits, localFallbackHabit]
+      setHabits(updated)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      setError('Template habit saved locally. Backend sync failed.')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const openCheckInBox = (habitId) => {
     setCheckInHabitId(habitId)
     setCheckInMinutes('30')
+    setCheckInNotes('')
   }
 
   const cancelCheckInBox = () => {
     setCheckInHabitId(null)
     setCheckInMinutes('30')
+    setCheckInNotes('')
   }
 
   const handleCheckIn = async (habitId) => {
@@ -177,6 +246,7 @@ export default function Dashboard({ user }) {
       // Close the inline panel immediately after save click.
       setCheckInHabitId(null)
       setCheckInMinutes('30')
+      setCheckInNotes('')
       const nowIso = new Date().toISOString()
       
       // Update locally first
@@ -188,7 +258,7 @@ export default function Dashboard({ user }) {
             lastCheckIn: nowIso,
             logs: [
               ...(Array.isArray(h.logs) ? h.logs : []),
-              { date: nowIso, completed: true, durationMinutes }
+              { date: nowIso, completed: true, durationMinutes, notes: checkInNotes?.trim() || '' }
             ]
           }
         }
@@ -203,7 +273,10 @@ export default function Dashboard({ user }) {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ durationMinutes })
+          body: JSON.stringify({
+            durationMinutes,
+            notes: checkInNotes?.trim() || ''
+          })
         })
 
         if (!response.ok) {
@@ -391,6 +464,21 @@ export default function Dashboard({ user }) {
           >
             {showAddForm ? '✕ Cancel' : '+ New Habit'}
           </button>
+        </div>
+        <div className="mb-8 glass-card p-4">
+          <p className="text-sm text-gray-400 mb-3">Quick start templates</p>
+          <div className="flex flex-wrap gap-3">
+            {PREBUILT_HABITS.map((template) => (
+              <button
+                key={template.key}
+                onClick={() => createHabitFromTemplate(template)}
+                disabled={creating}
+                className="px-4 py-2 bg-dark-tertiary border border-[rgba(255,255,255,0.15)] text-gray-200 rounded-lg hover:border-primary hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                + {template.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {showAddForm && (
@@ -596,6 +684,15 @@ export default function Dashboard({ user }) {
                       value={checkInMinutes}
                       onChange={(e) => setCheckInMinutes(e.target.value)}
                       className="w-full bg-dark-secondary border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-primary"
+                    />
+                    <label className="block text-xs text-gray-300 mb-2">
+                      Notes / Journal (optional)
+                    </label>
+                    <textarea
+                      value={checkInNotes}
+                      onChange={(e) => setCheckInNotes(e.target.value)}
+                      placeholder="How did it go today?"
+                      className="w-full bg-dark-secondary border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-primary h-20"
                     />
                     <div className="flex gap-2">
                       <button
