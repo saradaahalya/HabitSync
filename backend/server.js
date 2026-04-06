@@ -248,7 +248,7 @@ app.post('/api/habits/:userId', async (req, res) => {
 
   try {
     const sessionUserId = getSessionUserId(req);
-    const { title, description, category, frequency } = req.body;
+    const { title, description, category, frequency, weeklyGoal } = req.body;
 
     if (!sessionUserId) {
       console.log(`Unauthorized POST /api/habits attempt: session=${req.session.userId}`)
@@ -261,6 +261,11 @@ app.post('/api/habits/:userId', async (req, res) => {
       return res.status(400).json({ error: 'Habit title is required' });
     }
 
+    const parsedWeeklyGoal = Number(weeklyGoal);
+    const safeWeeklyGoal = Number.isInteger(parsedWeeklyGoal) && parsedWeeklyGoal > 0
+      ? parsedWeeklyGoal
+      : 7;
+
     // Create habit in database
     const habit = await prisma.habit.create({
       data: {
@@ -268,6 +273,7 @@ app.post('/api/habits/:userId', async (req, res) => {
         description: description || '',
         category: category || '',
         frequency: frequency || 'daily',
+        weeklyGoal: safeWeeklyGoal,
         userId: sessionUserId
       }
     });
@@ -290,7 +296,11 @@ app.put('/api/habits/:userId/:habitId', async (req, res) => {
   try {
     const sessionUserId = getSessionUserId(req);
     const habitId = req.params.habitId;
-    const { title, description, category, frequency } = req.body;
+    const { title, description, category, frequency, weeklyGoal } = req.body;
+    const parsedWeeklyGoal = Number(weeklyGoal);
+    const safeWeeklyGoal = Number.isInteger(parsedWeeklyGoal) && parsedWeeklyGoal > 0
+      ? parsedWeeklyGoal
+      : undefined;
 
     if (!sessionUserId) {
        console.log(`Unauthorized attempt: session=${req.session.userId}`);
@@ -313,7 +323,8 @@ app.put('/api/habits/:userId/:habitId', async (req, res) => {
         title: title || undefined,
         description: description,
         category: category,
-        frequency: frequency
+        frequency: frequency,
+        weeklyGoal: safeWeeklyGoal
       }
     });
 

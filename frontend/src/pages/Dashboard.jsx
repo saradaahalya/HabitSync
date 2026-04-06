@@ -7,10 +7,10 @@ export default function Dashboard({ user }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [formData, setFormData] = useState({ name: '', description: '', frequency: 'daily' })
+  const [formData, setFormData] = useState({ name: '', description: '', frequency: 'daily', weeklyGoal: 7 })
   const [creating, setCreating] = useState(false)
   const [editingHabitId, setEditingHabitId] = useState(null)
-  const [editFormData, setEditFormData] = useState({ name: '', description: '', frequency: 'daily' })
+  const [editFormData, setEditFormData] = useState({ name: '', description: '', frequency: 'daily', weeklyGoal: 7 })
   const [saving, setSaving] = useState(false)
   const [checkInHabitId, setCheckInHabitId] = useState(null)
   const [checkInMinutes, setCheckInMinutes] = useState('30')
@@ -21,8 +21,20 @@ export default function Dashboard({ user }) {
     ...habit,
     name: habit.name || habit.title || '',
     description: habit.description || '',
-    frequency: habit.frequency || 'daily'
+    frequency: habit.frequency || 'daily',
+    weeklyGoal: Number(habit.weeklyGoal) > 0 ? Number(habit.weeklyGoal) : 7,
+    logs: Array.isArray(habit.logs) ? habit.logs : []
   })
+
+  const getCurrentWeekCheckins = (habit) => {
+    const today = new Date()
+    const day = today.getDay() // Sun=0
+    const diffToMonday = day === 0 ? 6 : day - 1
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - diffToMonday)
+    monday.setHours(0, 0, 0, 0)
+    return (habit.logs || []).filter((log) => new Date(log.date) >= monday).length
+  }
 
   // Load habits from localStorage on mount
   useEffect(() => {
@@ -90,6 +102,7 @@ export default function Dashboard({ user }) {
         name: formData.name.trim(),
         description: formData.description || '',
         frequency: formData.frequency,
+        weeklyGoal: Number(formData.weeklyGoal) > 0 ? Number(formData.weeklyGoal) : 7,
         streak: 0,
         createdAt: new Date().toISOString(),
         lastCheckIn: null
@@ -104,7 +117,8 @@ export default function Dashboard({ user }) {
           body: JSON.stringify({
             title: formData.name.trim(),
             description: formData.description,
-            frequency: formData.frequency
+            frequency: formData.frequency,
+            weeklyGoal: Number(formData.weeklyGoal) > 0 ? Number(formData.weeklyGoal) : 7
           })
         })
         
@@ -129,7 +143,7 @@ export default function Dashboard({ user }) {
       }
       
       // Clear form
-      setFormData({ name: '', description: '', frequency: 'daily' })
+      setFormData({ name: '', description: '', frequency: 'daily', weeklyGoal: 7 })
       setShowAddForm(false)
       
       console.log('Habit created successfully')
@@ -241,7 +255,8 @@ export default function Dashboard({ user }) {
     setEditFormData({
       name: habit.name,
       description: habit.description,
-      frequency: habit.frequency
+      frequency: habit.frequency,
+      weeklyGoal: Number(habit.weeklyGoal) > 0 ? Number(habit.weeklyGoal) : 7
     })
   }
 
@@ -264,7 +279,8 @@ export default function Dashboard({ user }) {
             ...h,
             name: editFormData.name.trim(),
             description: editFormData.description,
-            frequency: editFormData.frequency
+            frequency: editFormData.frequency,
+            weeklyGoal: Number(editFormData.weeklyGoal) > 0 ? Number(editFormData.weeklyGoal) : 7
           }
         }
         return h
@@ -278,7 +294,12 @@ export default function Dashboard({ user }) {
           method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editFormData)
+          body: JSON.stringify({
+            title: editFormData.name,
+            description: editFormData.description,
+            frequency: editFormData.frequency,
+            weeklyGoal: Number(editFormData.weeklyGoal) > 0 ? Number(editFormData.weeklyGoal) : 7
+          })
         })
 
         if (!response.ok) {
@@ -289,7 +310,7 @@ export default function Dashboard({ user }) {
       }
 
       setEditingHabitId(null)
-      setEditFormData({ name: '', description: '', frequency: 'daily' })
+      setEditFormData({ name: '', description: '', frequency: 'daily', weeklyGoal: 7 })
       console.log('Habit updated successfully')
     } catch (err) {
       console.error('Error saving habit:', err)
@@ -301,7 +322,7 @@ export default function Dashboard({ user }) {
 
   const handleCancelEdit = () => {
     setEditingHabitId(null)
-    setEditFormData({ name: '', description: '', frequency: 'daily' })
+    setEditFormData({ name: '', description: '', frequency: 'daily', weeklyGoal: 7 })
   }
 
   const handleLogout = async () => {
@@ -407,6 +428,17 @@ export default function Dashboard({ user }) {
                   <option value="monthly">Monthly</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2">Weekly Goal (times/week)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={formData.weeklyGoal}
+                  onChange={(e) => setFormData({ ...formData, weeklyGoal: e.target.value })}
+                  className="w-full bg-dark-tertiary border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={creating || !formData.name.trim()}
@@ -456,6 +488,17 @@ export default function Dashboard({ user }) {
                     <option value="monthly">Monthly</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Weekly Goal (times/week)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={editFormData.weeklyGoal}
+                    onChange={(e) => setEditFormData({ ...editFormData, weeklyGoal: e.target.value })}
+                    className="w-full bg-dark-tertiary border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                  />
+                </div>
                 <div className="flex gap-3">
                   <button
                     type="submit"
@@ -504,6 +547,16 @@ export default function Dashboard({ user }) {
                   <div className="flex justify-between">
                     <span className="text-gray-400">Frequency:</span>
                     <span className="text-primary font-semibold">{habit.frequency}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Weekly Goal:</span>
+                    <span className="text-cyan-300 font-semibold">{habit.weeklyGoal || 7} times</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">This Week:</span>
+                    <span className="text-cyan-300 font-semibold">
+                      {getCurrentWeekCheckins(habit)} / {habit.weeklyGoal || 7}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Streak:</span>

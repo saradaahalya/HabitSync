@@ -24,6 +24,7 @@ model Habit {
   description String?
   category    String?
   frequency   String
+  weeklyGoal  Int        @default(7)
   userId      Int
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
