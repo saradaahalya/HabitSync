@@ -12,6 +12,8 @@ export default function Dashboard({ user }) {
   const [editingHabitId, setEditingHabitId] = useState(null)
   const [editFormData, setEditFormData] = useState({ name: '', description: '', frequency: 'daily' })
   const [saving, setSaving] = useState(false)
+  const [checkInHabitId, setCheckInHabitId] = useState(null)
+  const [checkInMinutes, setCheckInMinutes] = useState('30')
   
   // Storage key for this user
   const STORAGE_KEY = `habits_${user?.uid || 'unknown'}`
@@ -139,14 +141,42 @@ export default function Dashboard({ user }) {
     }
   }
 
+  const openCheckInBox = (habitId) => {
+    setCheckInHabitId(habitId)
+    setCheckInMinutes('30')
+  }
+
+  const cancelCheckInBox = () => {
+    setCheckInHabitId(null)
+    setCheckInMinutes('30')
+  }
+
   const handleCheckIn = async (habitId) => {
     try {
       setError(null)
+      const parsedDuration = Number(checkInMinutes)
+      if (!Number.isFinite(parsedDuration) || parsedDuration < 0) {
+        setError('Please enter valid minutes (0 or more)')
+        return
+      }
+      const durationMinutes = Math.floor(parsedDuration)
+      // Close the inline panel immediately after save click.
+      setCheckInHabitId(null)
+      setCheckInMinutes('30')
+      const nowIso = new Date().toISOString()
       
       // Update locally first
       const updated = habits.map(h => {
         if (h.id === habitId) {
-          return { ...h, streak: (h.streak || 0) + 1, lastCheckIn: new Date().toISOString() }
+          return {
+            ...h,
+            streak: (h.streak || 0) + 1,
+            lastCheckIn: nowIso,
+            logs: [
+              ...(Array.isArray(h.logs) ? h.logs : []),
+              { date: nowIso, completed: true, durationMinutes }
+            ]
+          }
         }
         return h
       })
@@ -158,14 +188,18 @@ export default function Dashboard({ user }) {
         const response = await fetch(`http://localhost:5000/api/habits/${user.uid}/${habitId}/checkin`, {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ durationMinutes })
         })
 
         if (!response.ok) {
-          console.warn('Backend check-in failed:', response.status)
+          const msg = `Backend check-in failed: ${response.status}`
+          console.warn(msg)
+          setError(msg)
         }
       } catch (err) {
         console.warn('Backend unavailable for check-in:', err.message)
+        setError('Check-in saved locally. Backend sync failed.')
       }
     } catch (err) {
       console.error('Check-in error:', err)
@@ -479,7 +513,7 @@ export default function Dashboard({ user }) {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleCheckIn(habit.id)}
+                    onClick={() => openCheckInBox(habit.id)}
                     className="flex-1 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-black font-semibold rounded-lg hover:shadow-lg transition text-sm"
                   >
                     ✓ Check In
@@ -497,6 +531,35 @@ export default function Dashboard({ user }) {
                     Delete
                   </button>
                 </div>
+                {checkInHabitId === habit.id && (
+                  <div className="mt-3 p-3 rounded-lg bg-dark-tertiary border border-[rgba(255,255,255,0.1)]">
+                    <label className="block text-xs text-gray-300 mb-2">
+                      Minutes spent today
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={checkInMinutes}
+                      onChange={(e) => setCheckInMinutes(e.target.value)}
+                      className="w-full bg-dark-secondary border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-primary"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleCheckIn(habit.id)}
+                        className="flex-1 px-3 py-2 bg-green-600/20 border border-green-600 text-green-300 rounded-lg text-sm font-semibold hover:bg-green-600/30 transition"
+                      >
+                        Save Check-in
+                      </button>
+                      <button
+                        onClick={cancelCheckInBox}
+                        className="flex-1 px-3 py-2 bg-gray-700/40 border border-gray-600 text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-700/60 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

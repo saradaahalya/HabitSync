@@ -23,7 +23,14 @@ const app = express();
 // ============================================
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5500', 'http://127.0.0.1:5500'],
+  origin: (origin, callback) => {
+    // Allow non-browser tools and localhost dev clients on any port.
+    if (!origin) return callback(null, true);
+    if (/^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -375,7 +382,7 @@ app.post('/api/habits/:userId/:habitId/checkin', async (req, res) => {
   try {
     const sessionUserId = getSessionUserId(req);
     const habitId = req.params.habitId;
-    const { date, notes } = req.body;
+    const { date, notes, durationMinutes } = req.body;
 
     if (!sessionUserId) {
        console.log(`Unauthorized attempt: session=${req.session.userId}`);
@@ -390,6 +397,10 @@ app.post('/api/habits/:userId/:habitId/checkin', async (req, res) => {
     }
 
     const checkinDate = date ? new Date(date) : new Date();
+    const parsedDurationMinutes = Number(durationMinutes);
+    const safeDurationMinutes = Number.isFinite(parsedDurationMinutes) && parsedDurationMinutes >= 0
+      ? Math.floor(parsedDurationMinutes)
+      : 0;
 
     // Create habit log entry
     const log = await prisma.habitLog.create({
@@ -397,6 +408,7 @@ app.post('/api/habits/:userId/:habitId/checkin', async (req, res) => {
         habitId: parseInt(habitId),
         date: checkinDate,
         completed: true,
+        durationMinutes: safeDurationMinutes,
         notes: notes || ''
       }
     });

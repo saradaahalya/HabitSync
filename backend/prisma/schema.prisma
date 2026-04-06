@@ -35,6 +35,7 @@ model HabitLog {
   habitId   Int
   date      DateTime @default(now())
   completed Boolean  @default(true)
+  durationMinutes Int @default(0)
   notes     String?
   habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
 

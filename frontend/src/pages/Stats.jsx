@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2'
+import { Bar, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,7 +11,6 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement,
 } from 'chart.js'
 
 // Register ChartJS components
@@ -23,15 +22,13 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  ArcElement
+  Legend
 )
 
 export default function Stats({ user }) {
   const navigate = useNavigate()
   const [habits, setHabits] = useState([])
   const [loading, setLoading] = useState(false)
-  const [chartType, setChartType] = useState('bar') // 'bar', 'line', 'pie', 'doughnut'
   const STORAGE_KEY = `habits_${user?.uid || 'unknown'}`
   const normalizeHabit = (habit) => ({
     ...habit,
@@ -40,9 +37,44 @@ export default function Stats({ user }) {
     frequency: habit.frequency || 'daily',
     logs: Array.isArray(habit.logs) ? habit.logs : []
   })
-  const getHabitValue = (habit) => {
-    // Prefer persisted check-ins from DB logs; fallback to legacy streak value.
-    return habit.logs?.length ?? habit.streak ?? 0
+  const getHabitStreakValue = (habit) => {
+    return habit.streak ?? habit.logs?.length ?? 0
+  }
+
+  const getLast7Days = () => {
+    const days = []
+    const today = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(today.getDate() - i)
+      days.push(d)
+    }
+    return days
+  }
+
+  const toDayKey = (date) => {
+    const d = new Date(date)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  const getCurrentWeekDays = () => {
+    const today = new Date()
+    const day = today.getDay() // 0=Sun, 1=Mon
+    const diffToMonday = day === 0 ? 6 : day - 1
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - diffToMonday)
+    monday.setHours(0, 0, 0, 0)
+
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      days.push(d)
+    }
+    return days
   }
 
   useEffect(() => {
@@ -117,7 +149,7 @@ export default function Stats({ user }) {
     }
 
     const totalHabits = habits.length
-    const streaks = habits.map(h => getHabitValue(h))
+    const streaks = habits.map(h => getHabitStreakValue(h))
     const averageStreak = streaks.length > 0 ? Math.floor(streaks.reduce((a, b) => a + b) / streaks.length) : 0
     const longestStreak = streaks.length > 0 ? Math.max(...streaks) : 0
     const completionRate = streaks.length > 0 ? Math.floor((streaks.filter(s => s > 0).length / streaks.length) * 100) : 0
@@ -132,97 +164,74 @@ export default function Stats({ user }) {
 
   const stats = calculateStats()
 
-  // Chart data generators
-  const generateBarChartData = () => {
+  const getWeeklyDailyHoursData = () => {
+    const days = getCurrentWeekDays()
+    const totalsByDay = {}
+    days.forEach((d) => {
+      totalsByDay[toDayKey(d)] = 0
+    })
+
+    habits.forEach((habit) => {
+      ;(habit.logs || []).forEach((log) => {
+        const key = toDayKey(log.date)
+        if (key in totalsByDay && log.completed) {
+          totalsByDay[key] += (log.durationMinutes || 0) / 60
+        }
+      })
+    })
+
     return {
-      labels: habits.map(h => h.name),
+      labels: days.map((d) => d.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit' })),
       datasets: [
         {
-          label: 'Streak (days)',
-          data: habits.map(h => getHabitValue(h)),
-          backgroundColor: 'rgba(0, 255, 204, 0.8)',
+          label: 'Hours',
+          data: days.map((d) => Number(totalsByDay[toDayKey(d)].toFixed(2))),
           borderColor: 'rgba(0, 255, 204, 1)',
+          backgroundColor: 'rgba(0, 255, 204, 0.2)',
+          borderWidth: 2,
+          tension: 0.35,
+          fill: true,
+        }
+      ]
+    }
+  }
+
+  const getHabitWiseWeeklyHoursData = () => {
+    const dayKeys = new Set(getCurrentWeekDays().map(toDayKey))
+    return {
+      labels: habits.map((h) => h.name),
+      datasets: [
+        {
+          label: 'Hours',
+          data: habits.map((habit) => {
+            const weeklyHours = (habit.logs || []).reduce((sum, log) => {
+              if (log.completed && dayKeys.has(toDayKey(log.date))) {
+                return sum + (log.durationMinutes || 0) / 60
+              }
+              return sum
+            }, 0)
+            return Number(weeklyHours.toFixed(2))
+          }),
+          backgroundColor: 'rgba(100, 200, 255, 0.8)',
+          borderColor: 'rgba(100, 200, 255, 1)',
           borderWidth: 2,
           borderRadius: 8,
-          hoverBackgroundColor: 'rgba(0, 255, 204, 1)',
         }
       ]
     }
   }
 
-  const generateLineChartData = () => {
+  const getWeeklyOverviewForHabit = (habit) => {
+    const dayKeys = new Set(getCurrentWeekDays().map(toDayKey))
+    const weeklyLogs = (habit.logs || []).filter((log) => log.completed && dayKeys.has(toDayKey(log.date)))
+    const weeklyHours = weeklyLogs.reduce((sum, log) => sum + (log.durationMinutes || 0) / 60, 0)
+    const latest = weeklyLogs.length > 0
+      ? weeklyLogs.map((l) => new Date(l.date)).sort((a, b) => b - a)[0]
+      : null
     return {
-      labels: habits.length > 0 ? Array.from({ length: 7 }, (_, i) => `Day ${i + 1}`) : ['Day 1'],
-      datasets: habits.map((habit, idx) => ({
-        label: habit.name,
-        data: Array.from({ length: 7 }, (_, i) => Math.max(0, getHabitValue(habit) - (6 - i))),
-        borderColor: `hsl(${idx * 60}, 100%, 50%)`,
-        backgroundColor: `hsla(${idx * 60}, 100%, 50%, 0.1)`,
-        borderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      }))
-    }
-  }
-
-  const generatePieChartData = () => {
-    const active = habits.filter(h => (h.streak || 0) > 0).length
-    const inactive = habits.length - active
-    return {
-      labels: ['Active', 'Inactive'],
-      datasets: [
-        {
-          data: [active, inactive],
-          backgroundColor: [
-            'rgba(0, 255, 204, 0.8)',
-            'rgba(255, 0, 127, 0.3)',
-          ],
-          borderColor: [
-            'rgba(0, 255, 204, 1)',
-            'rgba(255, 0, 127, 1)',
-          ],
-          borderWidth: 2,
-        }
-      ]
-    }
-  }
-
-  const generateDoughnutChartData = () => {
-    const frequencies = {}
-    habits.forEach(h => {
-      frequencies[h.frequency] = (frequencies[h.frequency] || 0) + 1
-    })
-    
-    const colors = {
-      daily: 'rgba(0, 255, 204, 0.8)',
-      weekly: 'rgba(100, 200, 255, 0.8)',
-      monthly: 'rgba(255, 200, 100, 0.8)',
-    }
-
-    return {
-      labels: Object.keys(frequencies),
-      datasets: [
-        {
-          data: Object.values(frequencies),
-          backgroundColor: Object.keys(frequencies).map(freq => colors[freq] || 'rgba(150, 150, 150, 0.8)'),
-          borderColor: 'rgba(255, 255, 255, 1)',
-          borderWidth: 2,
-        }
-      ]
-    }
-  }
-
-  const getChartData = () => {
-    switch (chartType) {
-      case 'line':
-        return generateLineChartData()
-      case 'pie':
-        return generatePieChartData()
-      case 'doughnut':
-        return generateDoughnutChartData()
-      case 'bar':
-      default:
-        return generateBarChartData()
+      weeklyCheckins: weeklyLogs.length,
+      weeklyHours: Number(weeklyHours.toFixed(2)),
+      latest
     }
   }
 
@@ -242,11 +251,16 @@ export default function Stats({ user }) {
         bodyColor: 'rgba(255, 255, 255, 1)',
       }
     },
-    scales: chartType === 'pie' || chartType === 'doughnut' ? {} : {
+    scales: {
       y: {
         beginAtZero: true,
         ticks: { color: 'rgba(255, 255, 255, 0.8)' },
         grid: { color: 'rgba(255, 255, 255, 0.1)' },
+        title: {
+          display: true,
+          text: 'Hours',
+          color: 'rgba(255, 255, 255, 0.8)'
+        }
       },
       x: {
         ticks: { color: 'rgba(255, 255, 255, 0.8)' },
@@ -297,66 +311,13 @@ export default function Stats({ user }) {
             {/* Chart Section */}
             {habits.length > 0 && (
               <div className="glass-card p-6 mb-8">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold mb-4">Habit Tracking Visualization</h3>
-                  
-                  {/* Chart Type Toggle */}
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    <button
-                      onClick={() => setChartType('bar')}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        chartType === 'bar'
-                          ? 'bg-gradient-to-r from-primary to-secondary text-black'
-                          : 'bg-dark-tertiary text-gray-300 hover:text-white'
-                      }`}
-                    >
-                      📊 Bar
-                    </button>
-                    <button
-                      onClick={() => setChartType('line')}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        chartType === 'line'
-                          ? 'bg-gradient-to-r from-primary to-secondary text-black'
-                          : 'bg-dark-tertiary text-gray-300 hover:text-white'
-                      }`}
-                    >
-                      📈 Line
-                    </button>
-                    <button
-                      onClick={() => setChartType('pie')}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        chartType === 'pie'
-                          ? 'bg-gradient-to-r from-primary to-secondary text-black'
-                          : 'bg-dark-tertiary text-gray-300 hover:text-white'
-                      }`}
-                    >
-                      🥧 Pie
-                    </button>
-                    <button
-                      onClick={() => setChartType('doughnut')}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${
-                        chartType === 'doughnut'
-                          ? 'bg-gradient-to-r from-primary to-secondary text-black'
-                          : 'bg-dark-tertiary text-gray-300 hover:text-white'
-                      }`}
-                    >
-                      🍩 Doughnut
-                    </button>
-                  </div>
-
-                  {/* Chart Container */}
-                  <div className="bg-dark-tertiary rounded-lg p-6 h-96 flex items-center justify-center">
-                    {habits.length > 0 ? (
-                      <>
-                        {chartType === 'bar' && <Bar data={getChartData()} options={chartOptions} />}
-                        {chartType === 'line' && <Line data={getChartData()} options={chartOptions} />}
-                        {chartType === 'pie' && <Pie data={getChartData()} options={chartOptions} />}
-                        {chartType === 'doughnut' && <Doughnut data={getChartData()} options={chartOptions} />}
-                      </>
-                    ) : (
-                      <p className="text-gray-400">Create habits to see visualization</p>
-                    )}
-                  </div>
+                <h3 className="text-xl font-bold mb-4">Daily Hours (This Week: Mon-Sun)</h3>
+                <div className="bg-dark-tertiary rounded-lg p-6 h-96 flex items-center justify-center mb-8">
+                  <Line data={getWeeklyDailyHoursData()} options={chartOptions} />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Habit-wise Hours (This Week)</h3>
+                <div className="bg-dark-tertiary rounded-lg p-6 h-96 flex items-center justify-center">
+                  <Bar data={getHabitWiseWeeklyHoursData()} options={chartOptions} />
                 </div>
               </div>
             )}
@@ -403,11 +364,14 @@ export default function Stats({ user }) {
                     <div key={habit.id} className="flex items-center justify-between p-4 bg-dark-tertiary rounded-lg hover:bg-dark-tertiary/80 transition">
                       <div className="flex-1">
                         <h4 className="font-semibold">{habit.name}</h4>
-                        <p className="text-sm text-gray-400">{habit.frequency} • Last check-in: {habit.lastCheckIn ? new Date(habit.lastCheckIn).toLocaleDateString() : 'Never'}</p>
+                        <p className="text-sm text-gray-400">
+                          {habit.frequency} • Last check-in:{' '}
+                          {getWeeklyOverviewForHabit(habit).latest ? getWeeklyOverviewForHabit(habit).latest.toLocaleDateString() : 'Never'}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">{habit.streak || 0} 🔥</div>
-                        <p className="text-xs text-gray-400">streak</p>
+                        <div className="text-2xl font-bold text-primary">{getWeeklyOverviewForHabit(habit).weeklyHours}h</div>
+                        <p className="text-xs text-gray-400">{getWeeklyOverviewForHabit(habit).weeklyCheckins} check-ins this week</p>
                       </div>
                     </div>
                   ))}
