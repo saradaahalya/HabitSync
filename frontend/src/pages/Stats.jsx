@@ -282,9 +282,8 @@ export default function Stats({ user }) {
               <Link to="/dashboard" className="pb-2 text-gray-400 hover:text-white transition">
                 Dashboard
               </Link>
-              <Link to="/stats" className="pb-2 text-primary border-b-2 border-primary">
-                Stats
-              </Link>
+              <div className="pb-2 text-primary border-b-2 border-primary cursor-default">Stats</div>
+              <Link to="/notes" className="pb-2 text-gray-400 hover:text-white transition">Notes</Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">

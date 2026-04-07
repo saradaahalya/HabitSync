@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
+import Notes from './pages/Notes'
 
 // Declare Firebase globally to use from global scope
 let currentUser = null
@@ -88,6 +89,7 @@ function App() {
         <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/" replace />} />
         <Route path="/stats" element={user ? <Stats user={user} /> : <Navigate to="/" replace />} />
+        <Route path="/notes" element={user ? <Notes user={user} /> : <Navigate to="/" replace />} />
       </Routes>
     </Router>
   )

@@ -13,7 +13,7 @@ A modern habit tracker built with vanilla HTML, CSS, JavaScript, Firebase authen
 - **Firebase Authentication**: Google Sign-In with session persistence
 
 ### Backend
-- **Express.js REST API**: Full habit management endpoints
+- **PRISMA**
 - **Session Management**: User sessions with 24-hour persistence
 - **CORS Support**: Configured for local development
 - **Health Monitoring**: API health checks

@@ -429,6 +429,9 @@ export default function Dashboard({ user }) {
               <Link to="/stats" className="pb-2 text-gray-400 hover:text-white transition">
                 Stats
               </Link>
+              <Link to="/notes" className="pb-2 text-gray-400 hover:text-white transition">
+                Notes
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">

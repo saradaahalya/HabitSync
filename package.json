@@ -10,7 +10,17 @@
     "frontend": "echo 'Frontend is in the /frontend folder. Serve with a live server.'",
     "setup": "cd backend && npm install"
   },
-  "keywords": ["habits", "tracker", "productivity"],
+  "keywords": [
+    "habits",
+    "tracker",
+    "productivity"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  }
 }

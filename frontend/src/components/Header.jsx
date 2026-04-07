@@ -22,6 +22,9 @@ export default function Header({ user, onLogout }) {
             <Link to="/stats" className={`pb-2 transition ${isActive('/stats')}`}>
               Stats
             </Link>
+            <Link to="/notes" className={`pb-2 transition ${isActive('/notes')}`}>
+              Notes
+            </Link>
           </nav>
         </div>
 
