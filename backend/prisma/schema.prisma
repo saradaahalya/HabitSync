@@ -16,6 +16,8 @@ model User {
   firebaseUid String?  @unique
   createdAt   DateTime @default(now())
   habits      Habit[]
+  lastActiveDate DateTime?
+  emailReminders Boolean @default(true)
 }
 
 model Habit {
